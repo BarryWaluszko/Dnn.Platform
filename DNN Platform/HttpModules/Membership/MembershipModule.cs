@@ -144,7 +144,35 @@ namespace DotNetNuke.HttpModules.Membership
                 }
             }
 
-            if (request.IsAuthenticated && !isActiveDirectoryAuthHeaderPresent && portalSettings != null)
+            //DNN-6673 START
+            //check if it's Windows Authentication request, and try to authenticate it
+            if (request.IsAuthenticated
+                && context.User != null
+                && portalSettings != null
+                && (context.User is WindowsPrincipal || isActiveDirectoryAuthHeaderPresent))
+            {
+                string userName = string.Empty;
+                //get WinAuth username from context 
+                if (context != null && context.User != null && context.User.Identity != null)
+                {
+                    var rgx = new System.Text.RegularExpressions.Regex(@"\w+[\\]+(?=)");
+                    userName = rgx.Replace(context.User.Identity.Name, string.Empty);
+                }
+
+                UserInfo userInfo = UserController.GetCachedUser(portalSettings.PortalId, userName);
+
+                //save userinfo object in context
+                if (context.Items.Contains("UserInfo"))
+                    context.Items["UserInfo"] = (userInfo == null ? new UserInfo() : userInfo); //update
+                else
+                    context.Items.Add("UserInfo", (userInfo == null ? new UserInfo() : userInfo)); //set new
+
+                //Localization.SetLanguage also updates the user profile, so this needs to go after the profile is loaded
+                if (userInfo != null)
+                    Localization.SetLanguage(userInfo.Profile.PreferredLocale);
+            }//DNN-6673 END
+
+            else if (request.IsAuthenticated && !isActiveDirectoryAuthHeaderPresent && portalSettings != null)
             {
                 var user = UserController.GetCachedUser(portalSettings.PortalId, context.User.Identity.Name);
                 //if current login is from windows authentication, the ignore the process
@@ -204,8 +232,13 @@ namespace DotNetNuke.HttpModules.Membership
                     }
                 }
 
+                ////DNN-6673 BEGIN
                 //save userinfo object in context
-                context.Items.Add("UserInfo", user);
+                if (context.Items.Contains("UserInfo"))
+                    context.Items["UserInfo"] = (user == null ? new UserInfo() : user); //update
+                else
+                    context.Items.Add("UserInfo", (user == null ? new UserInfo() : user)); //set new
+                //DNN-6673 END
 
                 //Localization.SetLanguage also updates the user profile, so this needs to go after the profile is loaded
                 if (!ServicesModule.ServiceApi.IsMatch(request.RawUrl))
@@ -214,10 +247,12 @@ namespace DotNetNuke.HttpModules.Membership
                 }
             }
 
-            if (context.Items["UserInfo"] == null)
-            {
+            ////DNN-6673 BEGIN
+            if (context.Items.Contains("UserInfo"))
+                context.Items["UserInfo"] = new UserInfo();
+            else
                 context.Items.Add("UserInfo", new UserInfo());
-            }
+            //DNN-6673 END
         }
     }
 }
