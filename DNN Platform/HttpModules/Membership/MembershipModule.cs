@@ -232,13 +232,8 @@ namespace DotNetNuke.HttpModules.Membership
                     }
                 }
 
-                ////DNN-6673 BEGIN
                 //save userinfo object in context
-                if (context.Items.Contains("UserInfo"))
-                    context.Items["UserInfo"] = (user == null ? new UserInfo() : user); //update
-                else
-                    context.Items.Add("UserInfo", (user == null ? new UserInfo() : user)); //set new
-                //DNN-6673 END
+                context.Items.Add("UserInfo", user);
 
                 //Localization.SetLanguage also updates the user profile, so this needs to go after the profile is loaded
                 if (!ServicesModule.ServiceApi.IsMatch(request.RawUrl))
@@ -247,12 +242,10 @@ namespace DotNetNuke.HttpModules.Membership
                 }
             }
 
-            ////DNN-6673 BEGIN
-            if (context.Items.Contains("UserInfo"))
-                context.Items["UserInfo"] = new UserInfo();
-            else
+            if (context.Items["UserInfo"] == null)
+            {
                 context.Items.Add("UserInfo", new UserInfo());
-            //DNN-6673 END
+            }
         }
     }
 }
