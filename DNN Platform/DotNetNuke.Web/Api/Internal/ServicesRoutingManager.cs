@@ -120,7 +120,7 @@ namespace DotNetNuke.Web.Api.Internal
                 DnnAuthorizeAttribute.AppendToDefaultAuthTypes(handler.AuthScheme);
                 //Add Windows Authentication type to make API request works when windows authentication enabled.
                 DnnAuthorizeAttribute.AppendToDefaultAuthTypes("Negotiate");
-
+                DnnAuthorizeAttribute.AppendToDefaultAuthTypes("Federation"); //( this is necessary for users who have using Active Directory Federation Service (AD FS) authentication providers)
                 //media type formatter for text/html, text/plain
                 GlobalConfiguration.Configuration.Formatters.Add(new StringPassThroughMediaTypeFormatter());
 

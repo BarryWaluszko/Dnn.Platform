@@ -167,7 +167,9 @@ namespace DotNetNuke.HttpModules.Membership
             var auth = request.Headers.Get("Authorization");
             if (!string.IsNullOrEmpty(auth))
             {
-                if (auth.StartsWith("Negotiate"))
+                if (auth.StartsWith("Negotiate") ||
+                    auth.StartsWith("Federation") //this will authenticate 'Federation' requests ( this is necessary for users who have using Active Directory Federation Service (AD FS) authentication providers)
+                    )
                 {
                     isActiveDirectoryAuthHeaderPresent = true;
                 }
